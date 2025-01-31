@@ -15,7 +15,7 @@ with open('history.csv', 'r') as file:
         team1, team2, isTeam1W = Team[row[0]], Team[row[1]], row[2] == "1"
         History.append((team1, team2, isTeam1W))
 
-ExpW = [0]*10
+Standing = [0]*10
 hadGame = [[False]*10 for _ in range(10)]
 
 for i in range(len(History)):
@@ -24,9 +24,9 @@ for i in range(len(History)):
     hadGame[team2][team1] = True
     
     if isTeam1W:
-        ExpW[team1] += 1
+        Standing[team1] += 1
     else:
-        ExpW[team2] += 1
+        Standing[team2] += 1
 
 def W_e(elo1, elo2):
     return 1/(10**((elo2-elo1)/400)+1)
@@ -44,14 +44,56 @@ for i in range(len(History)):
     team1, team2, isTeam1W = History[i]
     updateElo(Elo, team1, team2, isTeam1W)
 
+ExpW = Standing[:]
 for team1 in range(10):
     for team2 in range(team1):
-        if team1 != team2 and not hadGame[team1][team2]:
+        if not hadGame[team1][team2]:
             ExpW[team1] += W_e(Elo[team1], Elo[team2])
             ExpW[team2] += 1 - W_e(Elo[team1], Elo[team2])
 
-Enum.sort(key = lambda x:-ExpW[Team[x]])
+LeftGames = [] 
+for team1 in range(10):
+    for team2 in range(team1):
+        if not hadGame[team1][team2]:
+            LeftGames.append((team1, team2))
+
+PORatio = [0]*10
+for gameResult in range(2**len(LeftGames)):
+    weight = 1
+    PsStanding = Standing[:]
+    for team1, team2 in LeftGames:
+        isTeam1W = gameResult % 2
+        gameResult //= 2
+        
+        if isTeam1W:
+            PsStanding[team1] += 1
+            weight *= W_e(Elo[team1], Elo[team2])
+        else:
+            PsStanding[team2] += 1
+            weight *= 1 - W_e(Elo[team1], Elo[team2])
+    PsEnum = Enum[:]
+    PsEnum.sort(key = lambda x:-PsStanding[Team[x]])
+    PsStanding.sort(key = lambda x:-x)
+    if PsStanding[7] == PsStanding[8]:
+        i = 0
+        while i < 10 and PsStanding[i] != PsStanding[7]:
+            PORatio[Team[PsEnum[i]]] += weight
+            i += 1
+        j = 0
+        while i < 10 and PsStanding[i] == PsStanding[7]:
+            i += 1
+            j += 1
+        i -= j
+        for k in range(i, i+j):
+            PORatio[Team[PsEnum[k]]] += weight*(8-i)/j
+        
+    else:
+        for i in range(8):
+            PORatio[Team[PsEnum[i]]] += weight
+
+Enum.sort(key = lambda x:-PORatio[Team[x]])
 ExpW.sort(key = lambda x:-x)
+PORatio.sort(key = lambda x:-x)
 
 for i in range(10):
-    print(i+1, Enum[i], ExpW[i]*100//1/100)
+    print(i+1, Enum[i], ExpW[i]*100//1/100, "{0}%".format(PORatio[i]*1000000//1/10000) if PORatio[i]*1000000//1/10000 != 99.9999 else "확정")
