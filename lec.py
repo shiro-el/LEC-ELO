@@ -91,9 +91,11 @@ for gameResult in range(2**len(LeftGames)):
         for i in range(8):
             PORatio[Team[PsEnum[i]]] += weight
 
-Enum.sort(key = lambda x:-PORatio[Team[x]])
-ExpW.sort(key = lambda x:-x)
-PORatio.sort(key = lambda x:-x)
+Result = []
+for i in range(10):
+    Result.append((i, Enum[i], ExpW[i], PORatio[i], Elo[i]))
+
+Result.sort(key = lambda x:-x[2])
 
 for i in range(10):
-    print(i+1, Enum[i], ExpW[i]*100//1/100, "{0}%".format(PORatio[i]*1000000//1/10000) if PORatio[i]*1000000//1/10000 != 99.9999 else "확정")
+    print(i+1, Result[i][1], Result[i][2]*100//1/100, "{0}%".format(Result[i][3]*1000000//1/10000) if Result[i][3]*1000000//1/10000 != 99.9999 else "확정", Result[i][4])
